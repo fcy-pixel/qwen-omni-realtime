@@ -244,15 +244,26 @@
     catch(e){try{camStream=await navigator.mediaDevices.getUserMedia({video:true});}catch(e2){alert('無法開啟鏡頭：'+e2.message);return;}}
     camVideo.srcObject=camStream;camWrap.style.display='block';camBtn.classList.add('on');
     capCanvas=document.createElement('canvas');
-    frameTimer=setInterval(sendFrame,1200);
+    // 不連續串流；只在用戶說話時擷取，讓畫面與當下問題對應
   }
   function sendFrame(){
-    if(!ws||ws.readyState!==WebSocket.OPEN||!camVideo.videoWidth)return;
+    if(!ws||ws.readyState!==WebSocket.OPEN||!camStream||!camVideo.videoWidth)return;
     const w=360,h=Math.round(camVideo.videoHeight/camVideo.videoWidth*360);
     capCanvas.width=w;capCanvas.height=h;
     capCanvas.getContext('2d').drawImage(camVideo,0,0,w,h);
     const data=capCanvas.toDataURL('image/jpeg',0.55).split(',')[1];
     try{ws.send(JSON.stringify({event_id:'evt_'+Date.now(),type:'input_image_buffer.append',image:data}));}catch{}
+  }
+  // 用戶開始說話→持續擷取畮此刻所展示的物件，直到說完
+  function captureWhileSpeaking(){
+    if(!camStream)return;
+    sendFrame();
+    if(frameTimer)clearInterval(frameTimer);
+    frameTimer=setInterval(sendFrame,500);
+  }
+  function stopCapture(){
+    if(frameTimer){clearInterval(frameTimer);frameTimer=null;}
+    if(camStream)sendFrame(); // 說完再补最後一幀，作為這次提問的畫面
   }
   function stopCamera(){
     if(frameTimer)clearInterval(frameTimer);frameTimer=null;
@@ -309,9 +320,10 @@
         case 'session.created':case 'session.updated':break;
         case 'input_audio_buffer.speech_started':
           stopReact();if(outputCtx){try{outputCtx.close();}catch{}}newOutputCtx();
-          micBtn.className='recording';setAvatar('listening');setStatus('🎙️ 我在聽…');break;
+          micBtn.className='recording';setAvatar('listening');setStatus('🎙️ 我在聽…');
+          captureWhileSpeaking();break;
         case 'input_audio_buffer.speech_stopped':
-          setAvatar('thinking');setStatus('🤔 思考中…');break;
+          stopCapture();setAvatar('thinking');setStatus('🤔 思考中…');break;
         case 'response.audio.delta':
           micBtn.className='speaking';setAvatar('speaking');setStatus('🔊 回覆中…');
           if(!raf)reactLoop();playPCM16(m.delta);break;
