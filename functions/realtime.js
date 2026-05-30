@@ -1,4 +1,5 @@
-const UPSTREAM_URL = 'wss://llm-z15n6tzu1sj058db.ap-southeast-1.maas.aliyuncs.com/api-ws/v1/realtime';
+const MODEL = 'qwen3.5-omni-flash-realtime';
+const UPSTREAM_URL = `https://llm-z15n6tzu1sj058db.ap-southeast-1.maas.aliyuncs.com/api-ws/v1/realtime?model=${MODEL}`;
 
 export async function onRequest(context) {
   const { request, env, waitUntil } = context;

@@ -211,14 +211,23 @@
         outputCtx = new AudioContext();
         playHead  = 0;
 
-        // Send session config (matching original Python code)
+        // Send session config (matching DashScope Omni Realtime protocol)
         ws.send(JSON.stringify({
+          event_id: 'evt_' + Date.now(),
           type: 'session.update',
           session: {
+            modalities: ['audio', 'text'],
             voice: VOICE,
             instructions: INSTRUCTIONS,
-            output_modalities: ['audio', 'text'],
-            input_audio_transcription: { model: 'whisper-1' }
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            input_audio_transcription: { model: null },
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.2,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 800
+            }
           }
         }));
 
@@ -251,6 +260,7 @@
 
           const i16 = float32ToInt16(samples);
           ws.send(JSON.stringify({
+            event_id: 'evt_' + Date.now(),
             type: 'input_audio_buffer.append',
             audio: toBase64(i16.buffer)
           }));
@@ -267,6 +277,23 @@
         try { msg = JSON.parse(e.data); } catch { return; }
 
         switch (msg.type) {
+          case 'session.created':
+          case 'session.updated':
+            break;
+
+          case 'input_audio_buffer.speech_started':
+            // User started talking — stop current playback (barge-in)
+            if (outputCtx) { try { outputCtx.close(); } catch {} }
+            outputCtx = new AudioContext();
+            playHead = 0;
+            micBtn.className = 'recording';
+            setStatus('🎙️ 聆聽中…', 'on');
+            break;
+
+          case 'input_audio_buffer.speech_stopped':
+            setStatus('🤔 思考中…', 'on');
+            break;
+
           case 'response.audio.delta':
             micBtn.className = 'speaking';
             setStatus('🔊 小云回覆中…', 'talking');
@@ -281,7 +308,7 @@
             break;
 
           case 'response.audio_transcript.done':
-            if (!asmBubble) addMsg('assistant', msg.transcript || asmText);
+            if (!asmBubble && (msg.transcript || asmText)) addMsg('assistant', msg.transcript || asmText);
             asmBubble = null; asmText = '';
             micBtn.className = 'recording';
             setStatus('🎙️ 錄音中，請說話…', 'on');
@@ -289,6 +316,11 @@
 
           case 'conversation.item.input_audio_transcription.completed':
             if (msg.transcript?.trim()) addMsg('user', msg.transcript.trim());
+            break;
+
+          case 'error':
+            console.error('Realtime error:', msg);
+            setStatus('⚠️ ' + (msg.error?.message || JSON.stringify(msg.error || msg)));
             break;
         }
       };
