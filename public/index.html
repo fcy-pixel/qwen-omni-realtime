@@ -6,7 +6,7 @@
 <title>小云 · AI 語音助理</title>
 <style>
   :root{
-    --ink:#2a2150; --soft:#6b5fb0; --card:rgba(255,255,255,.65);
+    --ink:#2a2150; --soft:#6b5fb0;
     --accent:#7c5cff; --accent2:#46c8ff; --pink:#ff8fc7;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -17,7 +17,7 @@
     background:linear-gradient(170deg,#dbeafe 0%,#e7ddff 45%,#ffe3f3 100%);
   }
 
-  /* ---- sky decorations ---- */
+  /* sky decorations */
   .sky{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
   .sky .cloud{position:absolute;background:#fff;border-radius:50%;opacity:.7;filter:blur(1px);
     box-shadow:40px 10px 0 -6px #fff,80px 0 0 -10px #fff,-40px 8px 0 -8px #fff;animation:floatX 26s linear infinite;}
@@ -27,81 +27,92 @@
   @keyframes floatX{to{transform:translateX(140vw);}}
   .sky .star{position:absolute;width:8px;height:8px;background:#fff;opacity:.8;
     clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:twinkle 3s ease-in-out infinite;}
-  .sky .s1{top:18%;right:14%;} .sky .s2{top:40%;right:26%;width:6px;height:6px;animation-delay:-1s;}
-  .sky .s3{top:24%;left:18%;width:6px;height:6px;animation-delay:-2s;}
+  .sky .s1{top:16%;right:14%;} .sky .s2{top:40%;right:26%;width:6px;height:6px;animation-delay:-1s;}
+  .sky .s3{top:22%;left:18%;width:6px;height:6px;animation-delay:-2s;}
   @keyframes twinkle{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:.9;transform:scale(1.1)}}
 
-  /* ---- header ---- */
-  header{position:relative;z-index:3;display:flex;align-items:center;gap:9px;padding:16px 20px;}
+  /* header */
+  header{position:relative;z-index:3;display:flex;align-items:center;gap:9px;padding:14px 18px;}
   .brand-dot{width:9px;height:9px;border-radius:50%;background:#c3bdde;transition:.3s;}
   .brand-dot.live{background:#2ecc8f;animation:beat 1.6s infinite;}
   @keyframes beat{0%{box-shadow:0 0 0 0 rgba(46,204,143,.5)}70%{box-shadow:0 0 0 11px rgba(46,204,143,0)}100%{box-shadow:0 0 0 0 rgba(46,204,143,0)}}
-  header h1{font-size:17px;font-weight:800;letter-spacing:.4px;color:var(--ink);}
+  header h1{font-size:17px;font-weight:800;letter-spacing:.4px;}
   header .tag{margin-left:auto;font-size:11px;color:var(--soft);font-weight:600;
     background:rgba(255,255,255,.6);padding:5px 11px;border-radius:999px;box-shadow:0 4px 14px rgba(124,92,255,.12);}
 
-  /* ---- stage / character ---- */
+  /* stage / character */
   .stage{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;padding:0 16px;}
-  .charwrap{position:relative;width:min(78vw,300px);max-height:56vh;}
-  .charwrap svg{width:100%;height:auto;display:block;overflow:visible;}
+    align-items:center;justify-content:flex-end;padding:0 16px;}
+  .pill{margin-bottom:8px;font-size:12.5px;font-weight:700;color:#fff;background:rgba(124,92,255,.9);
+    padding:5px 14px;border-radius:999px;box-shadow:0 6px 18px rgba(124,92,255,.3);opacity:0;transition:.25s;}
+  .pill.show{opacity:1;}
 
-  #char{transform-box:fill-box;transform-origin:50% 50%;animation:bob 4.5s ease-in-out infinite;}
-  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  .charwrap{position:relative;width:min(82vw,330px);flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:0;}
+  /* glow aura */
+  #aura{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);width:78%;height:78%;
+    border-radius:50%;background:radial-gradient(circle,rgba(124,92,255,.45),rgba(70,200,255,.18) 55%,transparent 72%);
+    filter:blur(8px);opacity:0;transition:opacity .4s;z-index:0;}
+  .speaking #aura{opacity:1;animation:auraPulse 1.3s ease-in-out infinite;}
+  @keyframes auraPulse{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:.85;transform:translateX(-50%) scale(1.08)}}
 
-  .armL{transform-box:fill-box;transform-origin:88% 12%;animation:swayL 5s ease-in-out infinite;}
-  .armR{transform-box:fill-box;transform-origin:12% 12%;animation:swayR 5s ease-in-out infinite;}
-  @keyframes swayL{0%,100%{transform:rotate(4deg)}50%{transform:rotate(-8deg)}}
-  @keyframes swayR{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(8deg)}}
+  .floatwrap{position:relative;z-index:1;width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;
+    animation:bob 4.5s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+  .thinking .floatwrap{animation:bob 4.5s ease-in-out infinite, tilt 1.6s ease-in-out infinite;}
+  @keyframes tilt{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
 
-  #aura{transform-box:fill-box;transform-origin:50% 50%;opacity:0;transition:opacity .4s;}
-  .speaking #aura{opacity:1;animation:auraPulse 1.4s ease-in-out infinite;}
-  @keyframes auraPulse{0%,100%{transform:scale(1);opacity:.45}50%{transform:scale(1.12);opacity:.8}}
+  #avatar{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;
+    filter:drop-shadow(0 18px 22px rgba(80,50,140,.28));transition:filter .3s;}
+  .speaking #avatar{filter:drop-shadow(0 18px 26px rgba(124,92,255,.5));}
+  #fallback{display:none;width:200px;height:260px;border-radius:40% 40% 46% 46%/46% 46% 54% 54%;
+    background:radial-gradient(circle at 40% 30%,#fff,#cfe3ff 70%);box-shadow:0 18px 30px rgba(80,50,140,.25);}
 
-  .blink #eyeL,.blink #eyeR{transform:scaleY(.08);}
-  #eyeL,#eyeR{transform-box:fill-box;transform-origin:center;transition:transform .09s;}
-
-  #mouth{transform-box:fill-box;transform-origin:center;transition:transform .1s;}
-
-  /* listening sound rings */
-  .rings{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1;}
-  .rings i{position:absolute;left:50%;top:50%;width:140px;height:140px;margin:-70px 0 0 -70px;
+  /* listening rings */
+  .rings{position:absolute;left:50%;bottom:36%;transform:translateX(-50%);z-index:0;pointer-events:none;}
+  .rings i{position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;
     border-radius:50%;border:2px solid var(--accent);opacity:0;}
   .listening .rings i{animation:ring 2s ease-out infinite;}
   .rings i:nth-child(2){animation-delay:.7s;border-color:var(--accent2);}
   .rings i:nth-child(3){animation-delay:1.4s;border-color:var(--pink);}
-  @keyframes ring{0%{transform:scale(.6);opacity:.6}100%{transform:scale(1.7);opacity:0}}
+  @keyframes ring{0%{transform:scale(.55);opacity:.6}100%{transform:scale(1.7);opacity:0}}
 
-  .thinking #char{animation:bob 4.5s ease-in-out infinite, tilt 1.5s ease-in-out infinite;}
-  @keyframes tilt{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
-  .dots{position:absolute;left:50%;top:6%;transform:translateX(-50%);display:none;gap:6px;}
+  .dots{position:absolute;left:50%;top:8%;transform:translateX(-50%);display:none;gap:6px;z-index:2;}
   .thinking .dots{display:flex;}
-  .dots b{width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(124,92,255,.4);
-    animation:dotjump 1s infinite;}
+  .dots b{width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(124,92,255,.4);animation:dotjump 1s infinite;}
   .dots b:nth-child(2){animation-delay:.15s;} .dots b:nth-child(3){animation-delay:.3s;}
   @keyframes dotjump{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-8px);opacity:1}}
 
-  /* ---- subtitle (字幕) ---- */
-  .subtitle{position:relative;z-index:2;min-height:74px;display:flex;align-items:center;justify-content:center;
-    padding:0 18px;margin-bottom:6px;}
-  .cap{max-width:680px;text-align:center;font-size:19px;font-weight:600;line-height:1.5;
-    color:#fff;background:rgba(42,33,80,.78);padding:12px 20px;border-radius:18px;
+  /* camera PiP */
+  #camWrap{position:absolute;top:12px;right:14px;width:110px;z-index:4;display:none;
+    border-radius:14px;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.8);}
+  #camWrap video{width:100%;display:block;transform:scaleX(-1);background:#000;}
+  #camWrap .lbl{position:absolute;left:6px;bottom:5px;font-size:10px;color:#fff;font-weight:700;
+    background:rgba(0,0,0,.45);padding:2px 6px;border-radius:6px;}
+
+  /* subtitle (persistent) */
+  .subtitle{position:relative;z-index:2;min-height:80px;display:flex;align-items:center;justify-content:center;
+    padding:0 16px;margin:6px 0;}
+  .cap{max-width:700px;text-align:center;font-size:19px;font-weight:600;line-height:1.5;
+    color:#fff;background:rgba(42,33,80,.82);padding:13px 20px;border-radius:18px;
     box-shadow:0 10px 30px rgba(42,33,80,.25);backdrop-filter:blur(6px);
-    opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;
-    display:inline-flex;align-items:center;gap:9px;}
-  .cap.show{opacity:1;transform:none;}
+    display:inline-flex;align-items:center;gap:9px;transition:opacity .2s;}
   .cap .who{flex-shrink:0;font-size:12px;font-weight:800;padding:3px 8px;border-radius:8px;}
   .cap.assistant .who{background:linear-gradient(135deg,var(--accent),var(--accent2));}
   .cap.user .who{background:linear-gradient(135deg,#ff7eb3,#ff9966);}
-  .cap.hint{background:rgba(255,255,255,.7);color:var(--soft);font-weight:600;font-size:15px;box-shadow:0 8px 22px rgba(124,92,255,.15);}
+  .cap.hint{background:rgba(255,255,255,.72);color:var(--soft);font-weight:600;font-size:15px;box-shadow:0 8px 22px rgba(124,92,255,.15);}
 
-  /* ---- control ---- */
-  .control{position:relative;z-index:3;flex-shrink:0;display:flex;flex-direction:column;align-items:center;
-    gap:9px;padding:10px 0 calc(22px + env(safe-area-inset-bottom));}
+  /* control */
+  .control{position:relative;z-index:3;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    gap:22px;padding:8px 0 calc(22px + env(safe-area-inset-bottom));}
+  .cbtn{width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.85);box-shadow:0 8px 22px rgba(124,92,255,.2);transition:transform .12s,background .3s;}
+  .cbtn:active{transform:scale(.92);}
+  .cbtn svg{fill:#6b5fb0;width:24px;height:24px;}
+  .cbtn.on{background:linear-gradient(135deg,var(--accent2),#34d399);}
+  .cbtn.on svg{fill:#fff;}
   #mic{width:74px;height:74px;border-radius:50%;border:none;cursor:pointer;position:relative;
     background:linear-gradient(135deg,var(--accent),var(--accent2));
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 10px 30px rgba(124,92,255,.45);transition:transform .12s,box-shadow .3s;}
+    display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(124,92,255,.45);transition:transform .12s,box-shadow .3s;}
   #mic:active{transform:scale(.93);}
   #mic.recording{background:linear-gradient(135deg,#ff5b8e,#ff3b5c);animation:micpulse 1.5s infinite;}
   #mic.speaking{background:linear-gradient(135deg,#2ecc8f,#10b981);}
@@ -110,7 +121,6 @@
     100%{box-shadow:0 10px 30px rgba(255,80,130,.3),0 0 0 0 rgba(255,80,130,0)}}
   #mic:disabled{opacity:.6;cursor:wait;}
   #mic svg{fill:#fff;}
-  .hint{font-size:13px;color:var(--soft);font-weight:600;}
 </style>
 </head>
 <body>
@@ -126,130 +136,65 @@
   </header>
 
   <div class="stage" id="stage">
-    <div class="rings"><i></i><i></i><i></i></div>
-    <div class="dots"><b></b><b></b><b></b></div>
+    <div id="camWrap"><video id="cam" autoplay playsinline muted></video><span class="lbl">📷 鏡頭</span></div>
+    <div class="pill" id="pill"></div>
     <div class="charwrap">
-      <svg viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg" aria-label="小云">
-        <defs>
-          <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dff0ff"/>
-          </linearGradient>
-          <linearGradient id="gHair" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#9b8cff"/><stop offset="1" stop-color="#7c5cff"/>
-          </linearGradient>
-          <linearGradient id="gDress" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#8fd6ff"/><stop offset="1" stop-color="#6aa8ff"/>
-          </linearGradient>
-          <radialGradient id="gAura" cx="50%" cy="50%" r="50%">
-            <stop offset="0" stop-color="#a98bff" stop-opacity=".0"/>
-            <stop offset="65" stop-color="#a98bff" stop-opacity=".35"/>
-            <stop offset="100%" stop-color="#46c8ff" stop-opacity="0"/>
-          </radialGradient>
-          <radialGradient id="gCheek" cx="50%" cy="50%" r="50%">
-            <stop offset="0" stop-color="#ff9ec4"/><stop offset="100%" stop-color="#ff9ec4" stop-opacity="0"/>
-          </radialGradient>
-        </defs>
-
-        <!-- soft shadow -->
-        <ellipse cx="150" cy="356" rx="74" ry="15" fill="#7c5cff" opacity=".16"/>
-        <!-- glow aura behind -->
-        <circle id="aura" cx="150" cy="150" r="140" fill="url(#gAura)"/>
-
-        <g id="char">
-          <!-- back hair -->
-          <path d="M84 120 C70 60 120 24 150 24 C180 24 230 60 216 120 C232 150 224 196 206 214 L94 214 C76 196 68 150 84 120 Z" fill="url(#gHair)"/>
-
-          <!-- arms (behind body) -->
-          <g class="armR"><path d="M92 214 C66 224 56 256 64 282 C70 296 86 296 92 282 C96 262 100 238 110 224 Z" fill="url(#gBody)" stroke="#dfe9ff" stroke-width="2"/></g>
-          <g class="armL"><path d="M208 214 C234 224 244 256 236 282 C230 296 214 296 208 282 C204 262 200 238 190 224 Z" fill="url(#gBody)" stroke="#dfe9ff" stroke-width="2"/></g>
-
-          <!-- body / dress -->
-          <path d="M104 206 C104 196 196 196 196 206 L214 300 C214 330 86 330 86 300 Z" fill="url(#gDress)"/>
-          <path d="M104 206 C104 196 196 196 196 206 L200 232 C170 244 130 244 100 232 Z" fill="#ffffff" opacity=".25"/>
-          <!-- collar -->
-          <path d="M120 200 L150 222 L180 200 L168 192 L150 204 L132 192 Z" fill="#fff"/>
-
-          <!-- neck -->
-          <rect x="138" y="186" width="24" height="22" rx="10" fill="#f1f7ff"/>
-
-          <!-- head -->
-          <circle cx="150" cy="138" r="64" fill="url(#gBody)" stroke="#e6f0ff" stroke-width="2"/>
-          <!-- front hair / bangs -->
-          <path d="M88 134 C84 78 120 50 150 50 C180 50 216 78 212 134 C200 112 184 104 168 110 C160 92 140 92 132 110 C116 104 100 112 88 134 Z" fill="url(#gHair)"/>
-          <!-- side hair tufts -->
-          <path d="M86 132 C78 150 80 172 90 186 C92 166 90 148 96 134 Z" fill="url(#gHair)"/>
-          <path d="M214 132 C222 150 220 172 210 186 C208 166 210 148 204 134 Z" fill="url(#gHair)"/>
-
-          <!-- headphone (assistant vibe) -->
-          <path d="M96 120 A56 56 0 0 1 204 120" fill="none" stroke="#7c5cff" stroke-width="8" stroke-linecap="round"/>
-          <rect x="78" y="118" width="22" height="34" rx="11" fill="#7c5cff"/>
-          <rect x="200" y="118" width="22" height="34" rx="11" fill="#7c5cff"/>
-          <circle cx="89" cy="135" r="5" fill="#bfe3ff"/><circle cx="211" cy="135" r="5" fill="#bfe3ff"/>
-
-          <!-- cheeks -->
-          <ellipse cx="116" cy="156" rx="13" ry="9" fill="url(#gCheek)"/>
-          <ellipse cx="184" cy="156" rx="13" ry="9" fill="url(#gCheek)"/>
-
-          <!-- eyes -->
-          <g>
-            <ellipse id="eyeL" cx="126" cy="142" rx="11" ry="15" fill="#3a2f6b"/>
-            <ellipse id="eyeR" cx="174" cy="142" rx="11" ry="15" fill="#3a2f6b"/>
-            <circle cx="123" cy="137" r="4" fill="#fff"/><circle cx="171" cy="137" r="4" fill="#fff"/>
-          </g>
-
-          <!-- mouth -->
-          <path id="mouth" d="M138 166 Q150 178 162 166" fill="none" stroke="#3a2f6b" stroke-width="5" stroke-linecap="round"/>
-        </g>
-      </svg>
+      <div class="rings"><i></i><i></i><i></i></div>
+      <div class="dots"><b></b><b></b><b></b></div>
+      <div id="aura"></div>
+      <div class="floatwrap">
+        <img id="avatar" src="avatar.png" alt="小云" onerror="this.style.display='none';document.getElementById('fallback').style.display='block';"/>
+        <div id="fallback"></div>
+      </div>
     </div>
   </div>
 
   <div class="subtitle">
-    <div class="cap hint show" id="cap"><span>嗨，我是小云 👋 點擊麥克風，直接對我說話吧</span></div>
+    <div class="cap hint" id="cap"><span>嗨，我是小云 👋 點擊麥克風，直接對我說話吧</span></div>
   </div>
 
   <div class="control">
+    <button id="camBtn" class="cbtn" aria-label="鏡頭" title="開啟鏡頭讓我看到你的東西">
+      <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+    </button>
     <button id="mic" aria-label="麥克風">
       <svg width="32" height="32" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/></svg>
     </button>
-    <div class="hint" id="hint">點擊連接</div>
+    <button id="hintBtn" class="cbtn" aria-label="狀態" style="visibility:hidden"></button>
   </div>
 
 <script>
   const VOICE='Ethan';
-  const INSTRUCTIONS='你是个人助理小云，请用幽默风趣的方式回答用户的问题';
+  const INSTRUCTIONS='你是个人助理小云，请用幽默风趣的方式回答用户的问题。如果用户开启了摄像头，你可以看到画面，请主动观察并描述用户展示的物件。';
 
   const micBtn=document.getElementById('mic');
+  const camBtn=document.getElementById('camBtn');
   const dotEl=document.getElementById('dot');
   const stageEl=document.getElementById('stage');
-  const hintEl=document.getElementById('hint');
+  const pillEl=document.getElementById('pill');
   const capEl=document.getElementById('cap');
-  const charEl=document.getElementById('char');
-  const eyeL=document.getElementById('eyeL');
-  const eyeR=document.getElementById('eyeR');
-  const mouthEl=document.getElementById('mouth');
+  const avatarEl=document.getElementById('avatar');
+  const auraEl=document.getElementById('aura');
+  const camWrap=document.getElementById('camWrap');
+  const camVideo=document.getElementById('cam');
 
   let ws=null,inputCtx=null,outputCtx=null,processor=null,micStream=null;
   let analyser=null,outGain=null,playHead=0,connected=false;
   let asmText='';
+  let camStream=null,frameTimer=null,capCanvas=null;
 
   function setAvatar(state){
     stageEl.classList.remove('listening','thinking','speaking');
     if(state) stageEl.classList.add(state);
   }
-
-  // subtitle caption
-  function setCaption(role,text,isHint){
-    capEl.className='cap '+(isHint?'hint ':'')+(role||'');
-    capEl.innerHTML = isHint
-      ? '<span>'+text+'</span>'
-      : '<span class="who">'+(role==='user'?'你':'小云')+'</span><span>'+text+'</span>';
-    requestAnimationFrame(()=>capEl.classList.add('show'));
+  // status pill (does NOT touch subtitle)
+  function setStatus(text){pillEl.textContent=text;pillEl.classList.toggle('show',!!text);}
+  // subtitle stays until next real sentence replaces it
+  function setCaption(role,text){
+    capEl.className='cap '+(role||'');
+    capEl.innerHTML='<span class="who">'+(role==='user'?'你':'小云')+'</span><span>'+text+'</span>';
   }
-
-  // random blink
-  setInterval(()=>{if(!document.hidden){charEl.classList.add('blink');setTimeout(()=>charEl.classList.remove('blink'),130);}},
-    2800+Math.random()*2200);
+  function setHintCaption(text){capEl.className='cap hint';capEl.innerHTML='<span>'+text+'</span>';}
 
   function f32toI16(f){const o=new Int16Array(f.length);for(let i=0;i<f.length;i++){const s=Math.max(-1,Math.min(1,f[i]));o[i]=s<0?s*0x8000:s*0x7FFF;}return o;}
   function b64(buf){const u=new Uint8Array(buf);let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode(...u.subarray(i,i+8192));return btoa(s);}
@@ -272,12 +217,13 @@
     analyser.getByteTimeDomainData(arr);
     let sum=0;for(let i=0;i<arr.length;i++){const v=(arr[i]-128)/128;sum+=v*v;}
     const rms=Math.sqrt(sum/arr.length);
-    // open mouth by scaling Y based on volume
-    const open=1+Math.min(rms*7,2.6);
-    mouthEl.style.transform=`scaleY(${open.toFixed(2)})`;
+    const lift=Math.min(rms*46,15);
+    const sc=1+Math.min(rms*0.18,.06);
+    avatarEl.style.transform=`translateY(${-lift.toFixed(1)}px) scale(${sc.toFixed(3)})`;
+    auraEl.style.opacity=Math.min(.4+rms*3,1);
     raf=requestAnimationFrame(reactLoop);
   }
-  function stopReact(){if(raf)cancelAnimationFrame(raf);raf=null;mouthEl.style.transform='';}
+  function stopReact(){if(raf)cancelAnimationFrame(raf);raf=null;avatarEl.style.transform='';auraEl.style.opacity='';}
 
   function newOutputCtx(){
     outputCtx=new AudioContext();playHead=0;
@@ -286,12 +232,40 @@
     outGain.connect(analyser);analyser.connect(outputCtx.destination);
   }
 
-  async function connect(){
-    setCaption(null,'請求麥克風…',true);micBtn.disabled=true;hintEl.textContent='';
-    try{micStream=await navigator.mediaDevices.getUserMedia({audio:true});}
-    catch(e){setCaption(null,'無法取得麥克風：'+e.message,true);micBtn.disabled=false;hintEl.textContent='點擊重試';return;}
+  /* ---------- camera (vision) ---------- */
+  async function startCamera(){
+    try{camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:640}}});}
+    catch(e){try{camStream=await navigator.mediaDevices.getUserMedia({video:true});}catch(e2){alert('無法開啟鏡頭：'+e2.message);return;}}
+    camVideo.srcObject=camStream;camWrap.style.display='block';camBtn.classList.add('on');
+    capCanvas=document.createElement('canvas');
+    frameTimer=setInterval(sendFrame,1200);
+  }
+  function sendFrame(){
+    if(!ws||ws.readyState!==WebSocket.OPEN||!camVideo.videoWidth)return;
+    const w=360,h=Math.round(camVideo.videoHeight/camVideo.videoWidth*360);
+    capCanvas.width=w;capCanvas.height=h;
+    capCanvas.getContext('2d').drawImage(camVideo,0,0,w,h);
+    const data=capCanvas.toDataURL('image/jpeg',0.55).split(',')[1];
+    try{ws.send(JSON.stringify({event_id:'evt_'+Date.now(),type:'input_image_buffer.append',image:data}));}catch{}
+  }
+  function stopCamera(){
+    if(frameTimer)clearInterval(frameTimer);frameTimer=null;
+    camStream?.getTracks().forEach(t=>t.stop());camStream=null;
+    camWrap.style.display='none';camBtn.classList.remove('on');
+  }
+  camBtn.addEventListener('click',()=>{
+    if(camStream)stopCamera();
+    else if(connected)startCamera();
+    else alert('請先點麥克風連接，再開啟鏡頭');
+  });
 
-    setCaption(null,'連接中…',true);
+  /* ---------- realtime ---------- */
+  async function connect(){
+    setStatus('請求麥克風…');micBtn.disabled=true;
+    try{micStream=await navigator.mediaDevices.getUserMedia({audio:true});}
+    catch(e){setStatus('');setHintCaption('無法取得麥克風：'+e.message);micBtn.disabled=false;return;}
+
+    setStatus('連接中…');
     const proto=location.protocol==='https:'?'wss:':'ws:';
     ws=new WebSocket(proto+'//'+location.host+'/realtime');
 
@@ -319,8 +293,8 @@
 
       micBtn.disabled=false;micBtn.className='recording';
       dotEl.className='brand-dot live';
-      hintEl.textContent='再按一次斷開';
-      setAvatar('listening');setCaption(null,'🎙️ 我在聽，請說話…',true);
+      setAvatar('listening');setStatus('🎙️ 我在聽，請說話…');
+      setHintCaption('已連接 · 可按 📷 開啟鏡頭讓我看你的東西');
     };
 
     ws.onmessage=e=>{
@@ -329,35 +303,34 @@
         case 'session.created':case 'session.updated':break;
         case 'input_audio_buffer.speech_started':
           stopReact();if(outputCtx){try{outputCtx.close();}catch{}}newOutputCtx();
-          micBtn.className='recording';setAvatar('listening');setCaption(null,'🎙️ 我在聽…',true);break;
+          micBtn.className='recording';setAvatar('listening');setStatus('🎙️ 我在聽…');break;
         case 'input_audio_buffer.speech_stopped':
-          setAvatar('thinking');setCaption(null,'🤔 思考中…',true);break;
+          setAvatar('thinking');setStatus('🤔 思考中…');break;
         case 'response.audio.delta':
-          micBtn.className='speaking';setAvatar('speaking');
+          micBtn.className='speaking';setAvatar('speaking');setStatus('🔊 回覆中…');
           if(!raf)reactLoop();playPCM16(m.delta);break;
         case 'response.audio_transcript.delta':
           asmText+=m.delta;setCaption('assistant',asmText);break;
         case 'response.audio_transcript.done':
           if(m.transcript)setCaption('assistant',m.transcript);asmText='';break;
         case 'response.done':case 'response.audio.done':
-          stopReact();micBtn.className='recording';setAvatar('listening');
-          setTimeout(()=>{if(connected&&!asmText)setCaption(null,'🎙️ 我在聽，請說話…',true);},2200);break;
+          stopReact();micBtn.className='recording';setAvatar('listening');setStatus('🎙️ 我在聽，請說話…');break;
         case 'conversation.item.input_audio_transcription.completed':
-          if(m.transcript?.trim())setCaption('user',m.transcript.trim());break;
+          if(m.transcript?.trim()){setCaption('user',m.transcript.trim());asmText='';}break;
         case 'error':
           console.error('Realtime error:',m);
-          setCaption(null,'⚠️ '+(m.error?.message||JSON.stringify(m.error||m)),true);break;
+          setStatus('');setHintCaption('⚠️ '+(m.error?.message||JSON.stringify(m.error||m)));break;
       }
     };
 
-    ws.onclose=()=>{cleanup();setCaption(null,'已斷開，點擊重連',true);hintEl.textContent='點擊連接';};
-    ws.onerror=()=>{cleanup();setCaption(null,'連接錯誤，點擊重試',true);hintEl.textContent='點擊重試';};
+    ws.onclose=()=>{cleanup();setStatus('');setHintCaption('已斷開，點擊麥克風重連');};
+    ws.onerror=()=>{cleanup();setStatus('');setHintCaption('連接錯誤，點擊麥克風重試');};
   }
 
-  function disconnect(){ws?.close();cleanup();setCaption(null,'已斷開，點擊重連',true);hintEl.textContent='點擊連接';}
+  function disconnect(){ws?.close();cleanup();setStatus('');setHintCaption('已斷開，點擊麥克風重連');}
 
   function cleanup(){
-    connected=false;stopReact();asmText='';
+    connected=false;stopReact();asmText='';stopCamera();
     processor?.disconnect();processor=null;
     inputCtx?.close();inputCtx=null;
     outputCtx?.close();outputCtx=null;analyser=null;outGain=null;
