@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>小云 · AI 語音助理</title>
+<title>小慈 · 基慈小學 AI 助手</title>
 <style>
   :root{
     --ink:#2a2150; --soft:#6b5fb0;
@@ -32,12 +32,15 @@
   @keyframes twinkle{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:.9;transform:scale(1.1)}}
 
   /* header */
-  header{position:relative;z-index:3;display:flex;align-items:center;gap:9px;padding:14px 18px;}
+  header{position:relative;z-index:3;display:flex;align-items:center;gap:10px;padding:12px 18px;}
+  header .logo{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15));}
   .brand-dot{width:9px;height:9px;border-radius:50%;background:#c3bdde;transition:.3s;}
   .brand-dot.live{background:#2ecc8f;animation:beat 1.6s infinite;}
   @keyframes beat{0%{box-shadow:0 0 0 0 rgba(46,204,143,.5)}70%{box-shadow:0 0 0 11px rgba(46,204,143,0)}100%{box-shadow:0 0 0 0 rgba(46,204,143,0)}}
-  header h1{font-size:17px;font-weight:800;letter-spacing:.4px;}
-  header .tag{margin-left:auto;font-size:11px;color:var(--soft);font-weight:600;
+  header .ttl{display:flex;flex-direction:column;line-height:1.15;}
+  header h1{font-size:16px;font-weight:800;letter-spacing:.4px;}
+  header .sub{font-size:10.5px;color:var(--soft);font-weight:600;}
+  header .tag{margin-left:auto;font-size:11px;color:var(--soft);font-weight:600;display:flex;align-items:center;gap:6px;
     background:rgba(255,255,255,.6);padding:5px 11px;border-radius:999px;box-shadow:0 4px 14px rgba(124,92,255,.12);}
 
   /* stage / character */
@@ -130,9 +133,12 @@
   </div>
 
   <header>
-    <div class="brand-dot" id="dot"></div>
-    <h1>小云</h1>
-    <span class="tag">qwen3.5-omni · 即時語音</span>
+    <img class="logo" src="logo.png" alt="基慈小學"/>
+    <div class="ttl">
+      <h1>小慈</h1>
+      <span class="sub">基慈小學 AI 小助手</span>
+    </div>
+    <span class="tag"><span class="brand-dot" id="dot"></span>即時語音</span>
   </header>
 
   <div class="stage" id="stage">
@@ -143,14 +149,14 @@
       <div class="dots"><b></b><b></b><b></b></div>
       <div id="aura"></div>
       <div class="floatwrap">
-        <img id="avatar" src="avatar.png" alt="小云" onerror="this.style.display='none';document.getElementById('fallback').style.display='block';"/>
+        <img id="avatar" src="avatar.png" alt="小慈" onerror="this.style.display='none';document.getElementById('fallback').style.display='block';"/>
         <div id="fallback"></div>
       </div>
     </div>
   </div>
 
   <div class="subtitle">
-    <div class="cap hint" id="cap"><span>嗨，我是小云 👋 點擊麥克風，直接對我說話吧</span></div>
+    <div class="cap hint" id="cap"><span>你好，我是小慈 👋 基慈小學的 AI 小助手，按麥克風直接同我講嘢啦</span></div>
   </div>
 
   <div class="control">
@@ -165,7 +171,7 @@
 
 <script>
   const VOICE='Ethan';
-  const INSTRUCTIONS='你是个人助理小云，请用幽默风趣的方式回答用户的问题。如果用户开启了摄像头，你可以看到画面，请主动观察并描述用户展示的物件。';
+  const INSTRUCTIONS='你是「基慈小學」（CCC Kei Tsz Primary School）的 AI 小助手，名叫「小慈」。請一律使用繁體中文（廣東話書面語）以親切、有禮、耐心的語氣回答。你的職責是協助家長和學生解決在學校生活上遇到的問題，例如上學時間、校服、功課、活動、校車、聯絡學校等。回答要簡潔清楚、適合小學生及家長理解。如果用戶開啟了鏡頭，你可以看到畫面，請主動觀察並描述用戶展示的物件，協助解答。';
 
   const micBtn=document.getElementById('mic');
   const camBtn=document.getElementById('camBtn');
@@ -192,7 +198,7 @@
   // subtitle stays until next real sentence replaces it
   function setCaption(role,text){
     capEl.className='cap '+(role||'');
-    capEl.innerHTML='<span class="who">'+(role==='user'?'你':'小云')+'</span><span>'+text+'</span>';
+    capEl.innerHTML='<span class="who">'+(role==='user'?'你':'小慈')+'</span><span>'+text+'</span>';
   }
   function setHintCaption(text){capEl.className='cap hint';capEl.innerHTML='<span>'+text+'</span>';}
 
