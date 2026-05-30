@@ -1,6 +1,6 @@
 const SYSTEM_PROMPT = '你是个人助理小云，请用幽默风趣的方式回答用户的问题';
-const MODEL = 'qwen3.5-omni-flash';
-const DASHSCOPE_API = 'https://llm-z15n6tzu1sj058db.ap-southeast-1.maas.aliyuncs.com/api/v1/chat/completions';
+const MODEL = 'qwen-turbo';
+const DASHSCOPE_API = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 
 export async function onRequestPost(context) {
   const { request, env } = context;
