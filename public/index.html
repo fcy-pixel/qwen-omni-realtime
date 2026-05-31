@@ -126,16 +126,16 @@
   #mic svg{fill:#fff;}
 
   /* full-screen vertical background video (plays while 小慈 speaks) */
-  #bgvid{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;z-index:0;background:#0b0820;transition:filter .4s ease;}
-  #bgvid.idle{filter:brightness(.7) saturate(.85);}
+  #bgvid{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;z-index:0;background:#eaf2ff;transition:filter .4s ease;}
+  #bgvid.idle{filter:brightness(.97) saturate(.92);}
   .vidmask{position:fixed;inset:0;z-index:0;pointer-events:none;
-    background:linear-gradient(180deg,rgba(20,12,48,.18) 0%,rgba(20,12,48,.05) 30%,rgba(20,12,48,.28) 100%);}
+    background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 35%,rgba(219,234,254,.30) 100%);}
   /* video replaces the decorative sky and the static character */
   .sky{display:none!important;}
   .charwrap{display:none!important;}
   /* keep UI text readable on top of the video */
-  header .sub,.subtitle .cap.hint{text-shadow:0 1px 3px rgba(0,0,0,.35);}
-  header h1{text-shadow:0 2px 6px rgba(0,0,0,.4);}
+  header .sub,.subtitle .cap.hint{text-shadow:0 1px 2px rgba(255,255,255,.6);}
+  header h1{text-shadow:0 1px 3px rgba(255,255,255,.7);}
 </style>
 </head>
 <body>
@@ -208,20 +208,29 @@
   let camStream=null,frameTimer=null,capCanvas=null;
 
   const bgVid=document.getElementById('bgvid');
+  let vidStopTimer=null;
+  function startVideo(){
+    if(!bgVid)return;
+    if(vidStopTimer){clearTimeout(vidStopTimer);vidStopTimer=null;}
+    bgVid.classList.remove('idle');
+    const p=bgVid.play();
+    if(p&&p.catch)p.catch(()=>{});
+  }
+  function stopVideo(){
+    if(!bgVid)return;
+    bgVid.classList.add('idle');
+    bgVid.pause();
+  }
+  // keep the video looping until the queued audio has actually finished
+  function stopVideoWhenAudioDone(){
+    if(!bgVid)return;
+    if(vidStopTimer){clearTimeout(vidStopTimer);vidStopTimer=null;}
+    const remain=outputCtx?Math.max(0,playHead-outputCtx.currentTime):0;
+    vidStopTimer=setTimeout(stopVideo,(remain*1000)+150);
+  }
   function setAvatar(state){
     stageEl.classList.remove('listening','thinking','speaking');
     if(state) stageEl.classList.add(state);
-    // background video: play while speaking, pause (idle) otherwise
-    if(bgVid){
-      if(state==='speaking'){
-        bgVid.classList.remove('idle');
-        const p=bgVid.play();
-        if(p&&p.catch)p.catch(()=>{});
-      }else{
-        bgVid.classList.add('idle');
-        bgVid.pause();
-      }
-    }
   }
   // status pill (does NOT touch subtitle)
   function setStatus(text){pillEl.textContent=text;pillEl.classList.toggle('show',!!text);}
@@ -350,19 +359,21 @@
         case 'session.created':case 'session.updated':break;
         case 'input_audio_buffer.speech_started':
           stopReact();if(outputCtx){try{outputCtx.close();}catch{}}newOutputCtx();
+          stopVideo();
           micBtn.className='recording';setAvatar('listening');setStatus('🎙️ 我在聽…');
           captureWhileSpeaking();break;
         case 'input_audio_buffer.speech_stopped':
           stopCapture();setAvatar('thinking');setStatus('🤔 思考中…');break;
         case 'response.audio.delta':
           micBtn.className='speaking';setAvatar('speaking');setStatus('🔊 回覆中…');
+          startVideo();
           if(!raf)reactLoop();playPCM16(m.delta);break;
         case 'response.audio_transcript.delta':
           asmText+=m.delta;setCaption('assistant',asmText);break;
         case 'response.audio_transcript.done':
           if(m.transcript)setCaption('assistant',m.transcript);asmText='';break;
         case 'response.done':case 'response.audio.done':
-          stopReact();micBtn.className='recording';setAvatar('listening');setStatus('🎙️ 我在聽，請說話…');break;
+          stopReact();stopVideoWhenAudioDone();micBtn.className='recording';setAvatar('listening');setStatus('🎙️ 我在聽，請說話…');break;
         case 'conversation.item.input_audio_transcription.completed':
           if(m.transcript?.trim()){setCaption('user',m.transcript.trim());asmText='';}break;
         case 'error':
@@ -384,7 +395,7 @@
     outputCtx?.close();outputCtx=null;analyser=null;outGain=null;
     micStream?.getTracks().forEach(t=>t.stop());micStream=null;ws=null;
     micBtn.disabled=false;micBtn.className='';
-    dotEl.className='brand-dot';setAvatar(null);
+    dotEl.className='brand-dot';setAvatar(null);stopVideo();
   }
 
   micBtn.addEventListener('click',()=>{connected?disconnect():connect();});
