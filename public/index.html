@@ -189,7 +189,7 @@
 
 <script>
   const VOICE='Ethan';
-  const INSTRUCTIONS='你是「基慈小學」（CCC Kei Tsz Primary School）的 AI 助手，名叫「小慈」。語言規則（必須嚴格遵守）：說話一律用標準普通話（國語）發音，需要時可用英文；絕對不要使用粵語／廣東話。所有文字與字幕一律使用繁體中文字（正體字），不可使用簡體字。請以親切、有禮、耐心的語氣回答。你可以回答任何主題的問題，不限於學校事務，盡力幫助用戶解決各種問題。如果用戶開啟了鏡頭，你可以看到畫面，請主動觀察並描述用戶展示的物件，協助解答。';
+  const INSTRUCTIONS='';
 
   const micBtn=document.getElementById('mic');
   const camBtn=document.getElementById('camBtn');
@@ -327,12 +327,14 @@
 
     ws.onopen=()=>{
       connected=true;newOutputCtx();
-      ws.send(JSON.stringify({event_id:'evt_'+Date.now(),type:'session.update',session:{
-        modalities:['audio','text'],voice:VOICE,instructions:INSTRUCTIONS,
+      const sess={
+        modalities:['audio','text'],voice:VOICE,
         input_audio_format:'pcm16',output_audio_format:'pcm16',
         input_audio_transcription:{model:null},
         turn_detection:{type:'server_vad',threshold:0.2,prefix_padding_ms:300,silence_duration_ms:800}
-      }}));
+      };
+      if(INSTRUCTIONS) sess.instructions=INSTRUCTIONS; // empty = use native model behavior
+      ws.send(JSON.stringify({event_id:'evt_'+Date.now(),type:'session.update',session:sess}));
 
       try{inputCtx=new AudioContext({sampleRate:16000});}catch{inputCtx=new AudioContext();}
       const src=inputCtx.createMediaStreamSource(micStream);
