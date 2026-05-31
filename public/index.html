@@ -124,9 +124,23 @@
     100%{box-shadow:0 10px 30px rgba(255,80,130,.3),0 0 0 0 rgba(255,80,130,0)}}
   #mic:disabled{opacity:.6;cursor:wait;}
   #mic svg{fill:#fff;}
+
+  /* full-screen vertical background video (plays while 小慈 speaks) */
+  #bgvid{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;background:#0b0820;transition:filter .4s ease;}
+  #bgvid.idle{filter:brightness(.7) saturate(.85);}
+  .vidmask{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(20,12,48,.18) 0%,rgba(20,12,48,.05) 30%,rgba(20,12,48,.28) 100%);}
+  /* video replaces the decorative sky and the static character */
+  .sky{display:none!important;}
+  .charwrap{display:none!important;}
+  /* keep UI text readable on top of the video */
+  header .sub,.subtitle .cap.hint{text-shadow:0 1px 3px rgba(0,0,0,.35);}
+  header h1{text-shadow:0 2px 6px rgba(0,0,0,.4);}
 </style>
 </head>
 <body>
+  <video id="bgvid" class="idle" src="avatar.mp4" muted loop playsinline preload="auto"></video>
+  <div class="vidmask"></div>
   <div class="sky">
     <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
     <i class="star s1"></i><i class="star s2"></i><i class="star s3"></i>
@@ -193,9 +207,21 @@
   let asmText='';
   let camStream=null,frameTimer=null,capCanvas=null;
 
+  const bgVid=document.getElementById('bgvid');
   function setAvatar(state){
     stageEl.classList.remove('listening','thinking','speaking');
     if(state) stageEl.classList.add(state);
+    // background video: play while speaking, pause (idle) otherwise
+    if(bgVid){
+      if(state==='speaking'){
+        bgVid.classList.remove('idle');
+        const p=bgVid.play();
+        if(p&&p.catch)p.catch(()=>{});
+      }else{
+        bgVid.classList.add('idle');
+        bgVid.pause();
+      }
+    }
   }
   // status pill (does NOT touch subtitle)
   function setStatus(text){pillEl.textContent=text;pillEl.classList.toggle('show',!!text);}
