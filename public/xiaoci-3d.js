@@ -107,6 +107,7 @@ function initialise3D() {
 
       head = model.getObjectByName('Head');
       for (const name of [
+        'Hips', 'Spine02', 'Spine01', 'Spine', 'neck', 'Head',
         'LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand',
         'RightShoulder', 'RightArm', 'RightForeArm', 'RightHand'
       ]) bones[name] = model.getObjectByName(name);
@@ -166,8 +167,8 @@ function initialise3D() {
 
     if (modelLoaded) {
       restoreStablePose();
-      characterRoot.position.y = 0;
-      characterRoot.rotation.set(0, api.facing, 0);
+      applyUprightPosture();
+      animateNaturalStance(elapsed);
 
       const voiceTarget = THREE.MathUtils.clamp(api.audioLevel * 9, 0, 1);
       const voiceEase = 1 - Math.exp(-delta * (voiceTarget > smoothedVoice ? 22 : 13));
@@ -198,16 +199,83 @@ function initialise3D() {
     bone.quaternion.multiply(additive);
   }
 
+  function applyUprightPosture() {
+    // Bring the chest and head back over the hips without forcing a rigid pose.
+    applyAdditive(bones.Spine02, -0.065, 0, 0);
+    applyAdditive(bones.Spine01, -0.025, 0, 0);
+    applyAdditive(bones.Spine, -0.018, 0, 0);
+    applyAdditive(bones.neck, -0.035, 0, 0);
+    applyAdditive(bones.Head, -0.025, 0, 0);
+  }
+
+  function animateNaturalStance(elapsed) {
+    const motion = reducedMotion ? 0 : api.state === 'idle' ? 1 : api.state === 'speaking' ? 0.18 : 0.45;
+    const weightShift = Math.sin(elapsed * 0.68);
+    const breath = Math.sin(elapsed * 1.18 + 0.7);
+
+    // Millimetre-scale motion keeps the character alive without looking wobbly.
+    characterRoot.position.set(weightShift * 0.004 * motion, breath * 0.0025 * motion, 0);
+    characterRoot.rotation.set(
+      0,
+      api.facing + weightShift * 0.005 * motion,
+      Math.sin(elapsed * 0.52 + 1.2) * 0.0035 * motion
+    );
+    applyAdditive(bones.Spine02, breath * 0.0035, 0, weightShift * 0.0045, motion);
+    applyAdditive(bones.neck, -breath * 0.0015, -weightShift * 0.002, 0, motion);
+  }
+
   function createMouth() {
     const group = new THREE.Group();
     group.name = 'XiaociSpeakingMouth';
     group.position.set(0.2, 21.0, 21.8);
     group.visible = false;
 
+    // The generated GLB has a smile baked into its texture. A feathered skin
+    // patch hides that smile only while speech animation is active, preventing
+    // the original and animated mouths from appearing at the same time.
+    const coverCanvas = document.createElement('canvas');
+    coverCanvas.width = 128;
+    coverCanvas.height = 64;
+    const coverContext = coverCanvas.getContext('2d');
+    const coverPixels = coverContext.createImageData(128, 64);
+    for (let y = 0; y < 64; y += 1) {
+      for (let x = 0; x < 128; x += 1) {
+        const dx = (x - 63.5) / 63.5;
+        const dy = (y - 31.5) / 31.5;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const feather = 1 - smoothstep((distance - 0.72) / 0.28);
+        const vertical = y / 63;
+        const rightShade = Math.max(0, dx) * 3;
+        const offset = (y * 128 + x) * 4;
+        coverPixels.data[offset] = Math.round(242 - vertical * 5 - rightShade);
+        coverPixels.data[offset + 1] = Math.round(214 - vertical * 10 - rightShade);
+        coverPixels.data[offset + 2] = Math.round(190 - vertical * 12 - rightShade * 0.7);
+        coverPixels.data[offset + 3] = Math.round(feather * 255);
+      }
+    }
+    coverContext.putImageData(coverPixels, 0, 0);
+    const coverTexture = new THREE.CanvasTexture(coverCanvas);
+    coverTexture.colorSpace = THREE.SRGBColorSpace;
+    const cover = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({
+        map: coverTexture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false
+      })
+    );
+    cover.scale.set(20, 7, 1);
+    cover.position.z = -0.02;
+    cover.renderOrder = 19;
+    group.add(cover);
+
     const opening = new THREE.Mesh(
       new THREE.CircleGeometry(1, 32),
       new THREE.MeshBasicMaterial({
         color: 0x70223f,
+        transparent: true,
         depthTest: false,
         depthWrite: false,
         toneMapped: false
@@ -221,6 +289,7 @@ function initialise3D() {
       new THREE.CircleGeometry(1, 24),
       new THREE.MeshBasicMaterial({
         color: 0xff7899,
+        transparent: true,
         depthTest: false,
         depthWrite: false,
         toneMapped: false
