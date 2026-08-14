@@ -10,8 +10,11 @@ const api = {
   state: 'idle',
   audioLevel: 0,
   facing: 0,
+  stateChangedAt: performance.now(),
   setState(state = 'idle') {
-    this.state = ['idle', 'listening', 'thinking', 'speaking'].includes(state) ? state : 'idle';
+    const next = ['idle', 'listening', 'thinking', 'speaking'].includes(state) ? state : 'idle';
+    if (next !== this.state) this.stateChangedAt = performance.now();
+    this.state = next;
   },
   setAudioLevel(level = 0) {
     this.audioLevel = THREE.MathUtils.clamp(Number(level) || 0, 0, 0.35);
@@ -66,9 +69,13 @@ function initialise3D() {
 
   let mixer = null;
   let head = null;
-  let neck = null;
-  let spine = null;
+  let mouth = null;
+  let mouthOpening = null;
+  let mouthTongue = null;
   let modelLoaded = false;
+  let smoothedVoice = 0;
+  const stablePose = new Map();
+  const bones = {};
   const additive = new THREE.Quaternion();
   const euler = new THREE.Euler();
 
@@ -99,13 +106,33 @@ function initialise3D() {
       });
 
       head = model.getObjectByName('Head');
-      neck = model.getObjectByName('neck');
-      spine = model.getObjectByName('Spine02') || model.getObjectByName('Spine');
+      for (const name of [
+        'LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand',
+        'RightShoulder', 'RightArm', 'RightForeArm', 'RightHand'
+      ]) bones[name] = model.getObjectByName(name);
 
       if (gltf.animations.length) {
         mixer = new THREE.AnimationMixer(model);
-        mixer.clipAction(gltf.animations[0]).setLoop(THREE.LoopRepeat, Infinity).fadeIn(0.35).play();
+        const standingPose = mixer.clipAction(gltf.animations[0]);
+        standingPose.play();
+        mixer.setTime(Math.min(0.2, gltf.animations[0].duration));
+        mixer.update(0);
+        standingPose.paused = true;
       }
+
+      // Capture one calm frame from the supplied clip. Every rendered frame starts
+      // from this pose, so procedural motion never accumulates or drifts.
+      model.traverse((object) => {
+        if (!object.isBone) return;
+        stablePose.set(object, {
+          position: object.position.clone(),
+          quaternion: object.quaternion.clone(),
+          scale: object.scale.clone()
+        });
+      });
+
+      ({ group: mouth, opening: mouthOpening, tongue: mouthTongue } = createMouth());
+      if (head) head.add(mouth);
 
       modelLoaded = true;
       api.ready = true;
@@ -135,48 +162,122 @@ function initialise3D() {
 
     const delta = Math.min(clock.getDelta(), 0.05);
     const elapsed = clock.elapsedTime;
-    if (mixer) mixer.update(delta);
+    if (mixer) mixer.update(0);
 
-    if (modelLoaded && !reducedMotion) {
-      const voice = THREE.MathUtils.clamp(api.audioLevel * 8, 0, 1);
-      let headPitch = 0;
-      let headYaw = Math.sin(elapsed * 0.48) * 0.025;
-      let headRoll = Math.sin(elapsed * 0.37) * 0.018;
-      let bodyPitch = 0;
-      let bodyYaw = Math.sin(elapsed * 0.32) * 0.018;
-      let bob = Math.sin(elapsed * 1.05) * 0.012;
+    if (modelLoaded) {
+      restoreStablePose();
+      characterRoot.position.y = 0;
+      characterRoot.rotation.set(0, api.facing, 0);
 
-      if (api.state === 'listening') {
-        headPitch = 0.035 + Math.sin(elapsed * 0.7) * 0.018;
-        headRoll += 0.045;
-        bodyPitch = 0.018;
-      } else if (api.state === 'thinking') {
-        headYaw += Math.sin(elapsed * 0.82) * 0.06;
-        headRoll += 0.085;
-        headPitch = -0.035;
-        bodyYaw += Math.sin(elapsed * 0.55) * 0.028;
-      } else if (api.state === 'speaking') {
-        headPitch = Math.sin(elapsed * 4.8) * (0.018 + voice * 0.045);
-        headYaw += Math.sin(elapsed * 1.8) * (0.025 + voice * 0.025);
-        bodyYaw += Math.sin(elapsed * 1.25) * 0.035;
-        bob += voice * 0.025;
+      const voiceTarget = THREE.MathUtils.clamp(api.audioLevel * 9, 0, 1);
+      const voiceEase = 1 - Math.exp(-delta * (voiceTarget > smoothedVoice ? 22 : 13));
+      smoothedVoice = THREE.MathUtils.lerp(smoothedVoice, voiceTarget, voiceEase);
+      animateMouth(elapsed, smoothedVoice);
+
+      if (!reducedMotion && api.state === 'speaking') {
+        const speakingFor = Math.max(0, performance.now() - api.stateChangedAt) / 1000;
+        animateExplanationGestures(speakingFor);
       }
-
-      characterRoot.position.y = bob;
-      characterRoot.rotation.y = api.facing + bodyYaw;
-      applyAdditive(spine, bodyPitch, bodyYaw * 0.35, 0);
-      applyAdditive(neck, headPitch * 0.35, headYaw * 0.35, headRoll * 0.35);
-      applyAdditive(head, headPitch, headYaw, headRoll);
     }
 
     renderer.render(scene, camera);
   }
 
-  function applyAdditive(bone, x, y, z) {
+  function restoreStablePose() {
+    for (const [bone, pose] of stablePose) {
+      bone.position.copy(pose.position);
+      bone.quaternion.copy(pose.quaternion);
+      bone.scale.copy(pose.scale);
+    }
+  }
+
+  function applyAdditive(bone, x, y, z, amount = 1) {
     if (!bone) return;
-    euler.set(x, y, z, 'XYZ');
+    euler.set(x * amount, y * amount, z * amount, 'XYZ');
     additive.setFromEuler(euler);
     bone.quaternion.multiply(additive);
+  }
+
+  function createMouth() {
+    const group = new THREE.Group();
+    group.name = 'XiaociSpeakingMouth';
+    group.position.set(0.2, 21.0, 21.8);
+    group.visible = false;
+
+    const opening = new THREE.Mesh(
+      new THREE.CircleGeometry(1, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0x70223f,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false
+      })
+    );
+    opening.scale.set(6.2, 1.0, 1);
+    opening.renderOrder = 20;
+    group.add(opening);
+
+    const tongue = new THREE.Mesh(
+      new THREE.CircleGeometry(1, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0xff7899,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false
+      })
+    );
+    tongue.position.set(0, -0.5, 0.04);
+    tongue.scale.set(4.0, 0.55, 1);
+    tongue.renderOrder = 21;
+    group.add(tongue);
+    return { group, opening, tongue };
+  }
+
+  function animateMouth(elapsed, voice) {
+    if (!mouth || !mouthOpening || !mouthTongue) return;
+    const speaking = api.state === 'speaking';
+    mouth.visible = speaking;
+    if (!speaking) return;
+
+    // Audio controls the opening while a low-amplitude syllable pulse avoids a
+    // frozen mouth between streamed audio chunks.
+    const syllable = 0.58 + Math.sin(elapsed * 16.4) * 0.24 + Math.sin(elapsed * 23.1) * 0.18;
+    const openness = THREE.MathUtils.clamp(0.08 + voice * syllable, 0.08, 1);
+    mouthOpening.scale.y = 0.55 + openness * 3.1;
+    mouthOpening.scale.x = 6.2 - openness * 0.6;
+    mouthTongue.position.y = -0.25 - openness * 0.9;
+    mouthTongue.scale.y = 0.28 + openness * 0.5;
+  }
+
+  function animateExplanationGestures(time) {
+    // Each six-second phrase contains a clear setup, emphasis and return. Arms
+    // alternate so the character explains instead of continuously waving.
+    const phase = time % 6;
+    const right = gestureWindow(phase, 0.35, 1.1, 2.05, 2.75);
+    const left = gestureWindow(phase, 3.15, 3.85, 5.05, 5.75);
+    const emphasis = Math.sin(Math.min(1, Math.max(0, phase - 0.7)) * Math.PI * 2) * 0.035;
+
+    applyAdditive(bones.RightShoulder, -0.12, -0.04, -0.16, right);
+    applyAdditive(bones.RightArm, -0.55, -0.20, -0.86, right);
+    applyAdditive(bones.RightForeArm, -0.78, 0.10, -0.45, right);
+    applyAdditive(bones.RightHand, 0.10, 0.18, -0.25 + emphasis, right);
+
+    applyAdditive(bones.LeftShoulder, -0.10, 0.04, 0.15, left);
+    applyAdditive(bones.LeftArm, -0.52, 0.20, 0.82, left);
+    applyAdditive(bones.LeftForeArm, -0.75, -0.10, 0.42, left);
+    applyAdditive(bones.LeftHand, 0.10, -0.18, 0.24 - emphasis, left);
+  }
+
+  function gestureWindow(time, enter, holdStart, holdEnd, exit) {
+    if (time <= enter || time >= exit) return 0;
+    if (time < holdStart) return smoothstep((time - enter) / (holdStart - enter));
+    if (time <= holdEnd) return 1;
+    return 1 - smoothstep((time - holdEnd) / (exit - holdEnd));
+  }
+
+  function smoothstep(value) {
+    const t = THREE.MathUtils.clamp(value, 0, 1);
+    return t * t * (3 - 2 * t);
   }
 
   addEventListener('resize', resize, { passive: true });

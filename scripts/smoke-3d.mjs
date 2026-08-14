@@ -3,6 +3,9 @@ import { writeFile } from 'node:fs/promises';
 const endpoint = process.argv[2] || 'http://127.0.0.1:9222';
 const screenshotPath = process.argv[3] || 'design/xiaoci-3d-preview.png';
 const facing = Number(process.argv[4]);
+const avatarState = process.argv[5];
+const audioLevel = Number(process.argv[6]);
+const settleMs = Number(process.argv[7]) || 350;
 const pages = await fetch(`${endpoint}/json/list`).then((response) => response.json());
 const page = pages.find((entry) => entry.type === 'page' && entry.url.includes('127.0.0.1'));
 if (!page) throw new Error('Local test page was not found in Chrome.');
@@ -53,10 +56,16 @@ if (!state?.ready || !state.bodyClass.includes('three-ready')) {
   throw new Error('The rigged character did not reach the ready state.');
 }
 
-if (Number.isFinite(facing)) {
-  await call('Runtime.evaluate', { expression: `window.xiaoci3d.setFacing(${facing})` });
-  await new Promise((resolve) => setTimeout(resolve, 350));
+if (Number.isFinite(facing)) await call('Runtime.evaluate', { expression: `window.xiaoci3d.setFacing(${facing})` });
+if (['idle', 'listening', 'thinking', 'speaking'].includes(avatarState)) {
+  await call('Runtime.evaluate', {
+    expression: `window.xiaoci3d.setState(${JSON.stringify(avatarState)}); window.xiaoci3d.stateChangedAt = performance.now()`
+  });
 }
+if (Number.isFinite(audioLevel)) {
+  await call('Runtime.evaluate', { expression: `window.xiaoci3d.setAudioLevel(${audioLevel})` });
+}
+await new Promise((resolve) => setTimeout(resolve, settleMs));
 
 const capture = await call('Page.captureScreenshot', {
   format: 'png',
