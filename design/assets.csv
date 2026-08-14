@@ -1,0 +1,5 @@
+id,role,type,description,size/ratio,style line ref,source
+xiaoci-a-pose,3D reconstruction reference,image,Single full-body school assistant in a clean A-pose,2:3,design/style.md,Higgsfield Nano Banana Pro
+xiaoci-tripo-static,comparison mesh,glb,Tripo H3.1 textured static reconstruction,15000 faces,design/style.md,Higgsfield Tripo H3.1
+xiaoci-rigged-v2,runtime character,animated glb,Rigged school assistant with corrected Idle clip,full-screen responsive,design/style.md,Higgsfield Image to 3D + root-scale fix
+avatar-mp4,compatibility fallback,video,Existing prerendered speaking loop,vertical,existing production style,existing repository asset

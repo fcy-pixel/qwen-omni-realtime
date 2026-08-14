@@ -125,8 +125,13 @@
   #mic:disabled{opacity:.6;cursor:wait;}
   #mic svg{fill:#fff;}
 
-  /* full-screen vertical background video (plays while 小慈 speaks) */
-  #bgvid{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;z-index:0;background:#eaf2ff;transition:filter .4s ease;}
+  /* Rigged WebGL character with the existing MP4 retained as a fallback. */
+  #char3d{position:fixed;inset:0;width:100%;height:100%;z-index:0;opacity:0;pointer-events:none;
+    transition:opacity .45s ease;filter:drop-shadow(0 22px 28px rgba(80,50,140,.20));}
+  body.three-ready #char3d{opacity:1;}
+  #bgvid{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;z-index:0;background:#eaf2ff;
+    opacity:1;transition:filter .4s ease,opacity .45s ease;}
+  body.three-ready #bgvid{opacity:0;visibility:hidden;}
   #bgvid.idle{filter:brightness(.97) saturate(.92);}
   .vidmask{position:fixed;inset:0;z-index:0;pointer-events:none;
     background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 35%,rgba(219,234,254,.30) 100%);}
@@ -140,6 +145,7 @@
 </head>
 <body>
   <video id="bgvid" class="idle" src="avatar.mp4?v=20260723-reference" muted loop playsinline preload="auto"></video>
+  <canvas id="char3d" aria-label="小慈 3D 動畫角色"></canvas>
   <div class="vidmask"></div>
   <div class="sky">
     <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
@@ -187,6 +193,10 @@
     由阿里雲 <strong>Qwen3.5-Omni-Flash-Realtime</strong> 即時語音模型推動
   </footer>
 
+<script type="importmap">
+  {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"}}
+</script>
+<script type="module" src="xiaoci-3d.js"></script>
 <script>
   const VOICE='Ethan';
   const INSTRUCTIONS='你的名字叫「小慈」。請一律使用繁體中文（正體字）及標準中文書面語回答，語句自然、清楚、規範。不可使用簡體字、粵語口語、方言字或不規範的口語表達。除此之外不限主題，請盡力幫助用戶。';
@@ -211,6 +221,7 @@
   const bgVid=document.getElementById('bgvid');
   let vidStopTimer=null;
   function startVideo(){
+    if(window.xiaoci3d?.ready){window.xiaoci3d.setState('speaking');return;}
     if(!bgVid)return;
     if(vidStopTimer){clearTimeout(vidStopTimer);vidStopTimer=null;}
     bgVid.classList.remove('idle');
@@ -218,6 +229,8 @@
     if(p&&p.catch)p.catch(()=>{});
   }
   function stopVideo(){
+    window.xiaoci3d?.setAudioLevel(0);
+    if(window.xiaoci3d?.ready)return;
     if(!bgVid)return;
     bgVid.classList.add('idle');
     bgVid.pause();
@@ -232,6 +245,7 @@
   function setAvatar(state){
     stageEl.classList.remove('listening','thinking','speaking');
     if(state) stageEl.classList.add(state);
+    window.xiaoci3d?.setState(state||'idle');
   }
   // status pill (does NOT touch subtitle)
   function setStatus(text){pillEl.textContent=text;pillEl.classList.toggle('show',!!text);}
@@ -282,13 +296,14 @@
     analyser.getByteTimeDomainData(arr);
     let sum=0;for(let i=0;i<arr.length;i++){const v=(arr[i]-128)/128;sum+=v*v;}
     const rms=Math.sqrt(sum/arr.length);
+    window.xiaoci3d?.setAudioLevel(rms);
     const lift=Math.min(rms*46,15);
     const sc=1+Math.min(rms*0.18,.06);
     avatarEl.style.transform=`translateY(${-lift.toFixed(1)}px) scale(${sc.toFixed(3)})`;
     auraEl.style.opacity=Math.min(.4+rms*3,1);
     raf=requestAnimationFrame(reactLoop);
   }
-  function stopReact(){if(raf)cancelAnimationFrame(raf);raf=null;avatarEl.style.transform='';auraEl.style.opacity='';}
+  function stopReact(){if(raf)cancelAnimationFrame(raf);raf=null;window.xiaoci3d?.setAudioLevel(0);avatarEl.style.transform='';auraEl.style.opacity='';}
 
   function newOutputCtx(){
     outputCtx=new AudioContext();playHead=0;
@@ -442,6 +457,11 @@
   }
 
   micBtn.addEventListener('click',()=>{connected?disconnect():connect();});
+  window.addEventListener('xiaoci3dready',()=>{
+    bgVid?.pause();
+    const state=['listening','thinking','speaking'].find(s=>stageEl.classList.contains(s))||'idle';
+    window.xiaoci3d?.setState(state);
+  });
 </script>
 </body>
 </html>
