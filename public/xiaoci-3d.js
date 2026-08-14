@@ -201,27 +201,30 @@ function initialise3D() {
 
   function applyUprightPosture() {
     // Bring the chest and head back over the hips without forcing a rigid pose.
-    applyAdditive(bones.Spine02, -0.065, 0, 0);
-    applyAdditive(bones.Spine01, -0.025, 0, 0);
-    applyAdditive(bones.Spine, -0.018, 0, 0);
-    applyAdditive(bones.neck, -0.035, 0, 0);
-    applyAdditive(bones.Head, -0.025, 0, 0);
+    applyAdditive(bones.Spine02, -0.095, 0, 0);
+    applyAdditive(bones.Spine01, -0.042, 0, 0);
+    applyAdditive(bones.Spine, -0.028, 0, 0);
+    applyAdditive(bones.neck, -0.052, 0, 0);
+    applyAdditive(bones.Head, -0.034, 0, 0);
   }
 
   function animateNaturalStance(elapsed) {
     const motion = reducedMotion ? 0 : api.state === 'idle' ? 1 : api.state === 'speaking' ? 0.18 : 0.45;
-    const weightShift = Math.sin(elapsed * 0.68);
-    const breath = Math.sin(elapsed * 1.18 + 0.7);
+    const weightShift = Math.sin(elapsed * 0.56);
+    const breath = Math.sin(elapsed * 1.08 + 0.7);
 
-    // Millimetre-scale motion keeps the character alive without looking wobbly.
-    characterRoot.position.set(weightShift * 0.004 * motion, breath * 0.0025 * motion, 0);
+    // A slow weight transfer is visible at rest, while the neck subtly counters
+    // the torso so the character feels balanced instead of moving like a pendulum.
+    characterRoot.position.set(weightShift * 0.014 * motion, breath * 0.005 * motion, 0);
     characterRoot.rotation.set(
       0,
-      api.facing + weightShift * 0.005 * motion,
-      Math.sin(elapsed * 0.52 + 1.2) * 0.0035 * motion
+      api.facing + weightShift * 0.010 * motion,
+      Math.sin(elapsed * 0.48 + 1.2) * 0.007 * motion
     );
-    applyAdditive(bones.Spine02, breath * 0.0035, 0, weightShift * 0.0045, motion);
-    applyAdditive(bones.neck, -breath * 0.0015, -weightShift * 0.002, 0, motion);
+    applyAdditive(bones.Hips, 0, 0, -weightShift * 0.0035, motion);
+    applyAdditive(bones.Spine02, breath * 0.006, 0, weightShift * 0.009, motion);
+    applyAdditive(bones.neck, -breath * 0.003, -weightShift * 0.0035, -weightShift * 0.003, motion);
+    applyAdditive(bones.Head, 0, 0, -weightShift * 0.002, motion);
   }
 
   function createMouth() {
@@ -326,15 +329,15 @@ function initialise3D() {
     const left = gestureWindow(phase, 3.15, 3.85, 5.05, 5.75);
     const emphasis = Math.sin(Math.min(1, Math.max(0, phase - 0.7)) * Math.PI * 2) * 0.035;
 
-    applyAdditive(bones.RightShoulder, -0.12, -0.04, -0.16, right);
-    applyAdditive(bones.RightArm, -0.55, -0.20, -0.86, right);
-    applyAdditive(bones.RightForeArm, -0.78, 0.10, -0.45, right);
-    applyAdditive(bones.RightHand, 0.10, 0.18, -0.25 + emphasis, right);
+    applyAdditive(bones.RightShoulder, -0.15, -0.05, -0.20, right);
+    applyAdditive(bones.RightArm, -0.66, -0.24, -1.02, right);
+    applyAdditive(bones.RightForeArm, -0.94, 0.12, -0.54, right);
+    applyAdditive(bones.RightHand, 0.12, 0.22, -0.30 + emphasis, right);
 
-    applyAdditive(bones.LeftShoulder, -0.10, 0.04, 0.15, left);
-    applyAdditive(bones.LeftArm, -0.52, 0.20, 0.82, left);
-    applyAdditive(bones.LeftForeArm, -0.75, -0.10, 0.42, left);
-    applyAdditive(bones.LeftHand, 0.10, -0.18, 0.24 - emphasis, left);
+    applyAdditive(bones.LeftShoulder, -0.13, 0.05, 0.19, left);
+    applyAdditive(bones.LeftArm, -0.63, 0.24, 0.98, left);
+    applyAdditive(bones.LeftForeArm, -0.90, -0.12, 0.50, left);
+    applyAdditive(bones.LeftHand, 0.12, -0.22, 0.29 - emphasis, left);
   }
 
   function gestureWindow(time, enter, holdStart, holdEnd, exit) {
